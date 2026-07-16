@@ -1,13 +1,13 @@
 export default function TicketRef() {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+    <div className="card p-5">
       <div className="flex items-center gap-3 mb-3">
         <div
           className="w-10 h-10 rounded-lg flex items-center justify-center text-white"
           style={{ backgroundColor: "#8DC63F" }}
         >
           <svg
-            className="w-5 h-5"
+            className="icon-lg"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -51,17 +51,10 @@ export default function TicketRef() {
         href="https://glsitaly.service-now.com/gls_create_report?id=revisione_segnalazione_gls&table=u_segnalazioni_customer_care&sys_id=9e94c0ba2bca0f505b35fa8af291bfab"
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg transition-colors w-full justify-center"
-        style={{ backgroundColor: "#8DC63F", color: "white" }}
-        onMouseEnter={(e) =>
-          (e.currentTarget.style.backgroundColor = "#6BA32E")
-        }
-        onMouseLeave={(e) =>
-          (e.currentTarget.style.backgroundColor = "#8DC63F")
-        }
+        className="btn btn-green w-full justify-center"
       >
         <svg
-          className="w-4 h-4"
+          className="icon"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"

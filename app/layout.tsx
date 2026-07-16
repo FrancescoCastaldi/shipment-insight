@@ -14,10 +14,9 @@ export default function RootLayout({
   return (
     <html lang="it">
       <head>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@4.0.0/dist/tailwind.min.css" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
-      <body className="bg-gray-50 text-gray-900 antialiased">{children}</body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

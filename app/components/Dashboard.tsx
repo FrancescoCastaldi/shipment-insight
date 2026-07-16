@@ -42,21 +42,15 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div>
       {/* Header */}
-      <header
-        className="border-b"
-        style={{
-          backgroundColor: "#8DC63F",
-          borderColor: "#6BA32E",
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+      <header className="header">
+        <div className="container py-4">
+          <div className="header-content">
+            <div className="header-left">
+              <div className="header-logo">
                 <svg
-                  className="w-6 h-6"
+                  className="icon-lg"
                   style={{ color: "#8DC63F" }}
                   fill="none"
                   stroke="currentColor"
@@ -71,21 +65,17 @@ export default function Dashboard() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">
-                  Spedizioni Tracker
-                </h1>
-                <p className="text-sm text-white/80">
-                  Monitoraggio spedizioni GLS
-                </p>
+                <h1 className="header-title">Spedizioni Tracker</h1>
+                <p className="header-subtitle">Monitoraggio spedizioni GLS</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="header-actions">
               <button
                 onClick={caricaSpedizioni}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
+                className="btn btn-ghost"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="icon"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -101,10 +91,10 @@ export default function Dashboard() {
               </button>
               <button
                 onClick={() => setShowAddForm(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-white text-gray-700 rounded-lg hover:bg-gray-100 transition-colors shadow-sm"
+                className="btn btn-white"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="icon"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -124,20 +114,20 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="container py-8">
         {/* Stats */}
         <StatsCards spedizioni={spedizioni} />
 
         {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-3">
           {/* Spedizioni List */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="card">
               {/* Tabella per desktop */}
               <div className="hidden lg:block overflow-x-auto">
-                <table className="w-full">
+                <table className="table">
                   <thead>
-                    <tr className="border-b border-gray-200">
+                    <tr className="table-header">
                       <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Tracking
                       </th>
@@ -158,7 +148,7 @@ export default function Dashboard() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y">
                     {spedizioni.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="px-6 py-12 text-center">
@@ -183,11 +173,11 @@ export default function Dashboard() {
                                   href={spedizione.link_tracking}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                                  className="link-ext"
                                   title="Apri tracking"
                                 >
                                   <svg
-                                    className="w-3.5 h-3.5"
+                                    className="icon-sm"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -204,14 +194,10 @@ export default function Dashboard() {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <span
-                              className="inline-flex items-center gap-1.5 text-sm font-medium"
+                            <span className="inline-flex items-center gap-1 text-sm font-medium"
                               style={{ color: "#8DC63F" }}
                             >
-                              <span
-                                className="w-2 h-2 rounded-full"
-                                style={{ backgroundColor: "#8DC63F" }}
-                              />
+                              <span className="gls-dot" />
                               {spedizione.corriere}
                             </span>
                           </td>
@@ -233,12 +219,12 @@ export default function Dashboard() {
                           </td>
                           <td className="px-6 py-4">
                             <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              className={`badge ${
                                 spedizione.stato.includes("inviata")
-                                  ? "bg-blue-100 text-blue-800"
+                                  ? "badge-blue"
                                   : spedizione.stato.includes("Consegnata")
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-yellow-100 text-yellow-800"
+                                  ? "badge-green"
+                                  : "badge-yellow"
                               }`}
                             >
                               {spedizione.stato}
@@ -253,13 +239,13 @@ export default function Dashboard() {
                                     "Richiesta info inviata"
                                   )
                                 }
-                                className="text-xs font-medium px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                                className="btn btn-sm btn-blue"
                               >
                                 Aggiorna
                               </button>
                               <button
                                 onClick={() => handleDelete(spedizione.id)}
-                                className="text-xs font-medium px-3 py-1.5 rounded-md bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                                className="btn btn-sm btn-red"
                               >
                                 Elimina
                               </button>
@@ -275,7 +261,7 @@ export default function Dashboard() {
               {/* Cards per mobile */}
               <div className="lg:hidden p-4">
                 {spedizioni.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
+                  <div className="empty-state">
                     Nessuna spedizione trovata
                   </div>
                 ) : (

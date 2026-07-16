@@ -13,18 +13,18 @@ export default function SpedizioneCard({
   onDelete,
   onStatusChange,
 }: Props) {
-  const getStatusColor = (stato: string) => {
+  const getStatusBadge = (stato: string) => {
     if (stato.includes("arrivo") || stato.includes("monitor"))
-      return "bg-yellow-100 text-yellow-800";
+      return "badge-yellow";
     if (stato.includes("inviata") || stato.includes("Rettifica"))
-      return "bg-blue-100 text-blue-800";
+      return "badge-blue";
     if (stato.includes("Consegnata"))
-      return "bg-green-100 text-green-800";
-    return "bg-gray-100 text-gray-800";
+      return "badge-green";
+    return "badge-yellow";
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
+    <div className="card p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -34,11 +34,7 @@ export default function SpedizioneCard({
             >
               {spedizione.corriere}
             </span>
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                spedizione.stato
-              )}`}
-            >
+            <span className={`badge ${getStatusBadge(spedizione.stato)}`}>
               {spedizione.stato}
             </span>
           </div>
@@ -46,7 +42,7 @@ export default function SpedizioneCard({
           <p className="text-sm font-mono text-gray-900 font-medium truncate">
             {spedizione.tracking}
           </p>
-          <p className="text-sm text-gray-600 mt-0.5 truncate">
+          <p className="text-sm text-gray-600 mt-1 truncate">
             {spedizione.descrizione}
           </p>
           <p className="text-xs text-gray-400 mt-1">
@@ -67,10 +63,10 @@ export default function SpedizioneCard({
             href={spedizione.link_tracking}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+            className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
           >
             <svg
-              className="w-3.5 h-3.5"
+              className="icon-sm"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -88,17 +84,17 @@ export default function SpedizioneCard({
 
         <button
           onClick={() => onStatusChange(spedizione.id, "Richiesta info inviata")}
-          className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+          className="btn btn-sm btn-blue"
         >
           Aggiorna stato
         </button>
 
         <button
           onClick={() => onDelete(spedizione.id)}
-          className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-red-50 text-red-700 hover:bg-red-100 transition-colors ml-auto"
+          className="btn btn-sm btn-red ml-auto"
         >
           <svg
-            className="w-3.5 h-3.5"
+            className="icon-sm"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

@@ -86,20 +86,18 @@ ${generaCorpo()}`;
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+    <div className="card p-5">
       <h3 className="font-semibold text-gray-900 mb-4">
         Richiesta Informazioni Spedizione
       </h3>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Spedizione
-          </label>
+          <label className="form-label">Spedizione</label>
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
+            className="form-select"
           >
             <option value="">Seleziona una spedizione...</option>
             {spedizioni.map((s) => (
@@ -117,9 +115,7 @@ ${generaCorpo()}`;
 
         {spedizioneSelezionata && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Anteprima Email
-            </label>
+            <label className="form-label">Anteprima Email</label>
             <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 text-sm text-gray-700 whitespace-pre-wrap font-mono text-xs leading-relaxed max-h-48 overflow-y-auto">
               {generaCorpo()}
             </div>
@@ -136,15 +132,7 @@ ${generaCorpo()}`;
           <button
             onClick={handleCopiaTesto}
             disabled={!selectedId}
-            className="w-full px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: "#8DC63F" }}
-            onMouseEnter={(e) =>
-              !selectedId ||
-              (e.currentTarget.style.backgroundColor = "#6BA32E")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#8DC63F")
-            }
+            className="btn btn-green w-full disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Copia Testo Email
           </button>

@@ -28,26 +28,20 @@ export default function StatsCards({ spedizioni }: Props) {
   }, [spedizioni]);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-        <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-          Totale Spedizioni
-        </div>
-        <div className="mt-2 text-3xl font-bold text-gray-900">
-          {stats.totale}
-        </div>
+    <div className="stats-grid">
+      <div className="card p-5">
+        <div className="card-title">Totale Spedizioni</div>
+        <div className="card-value">{stats.totale}</div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-        <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-          Per Corriere
-        </div>
+      <div className="card p-5">
+        <div className="card-title">Per Corriere</div>
         <div className="mt-2 space-y-1">
           {Object.entries(stats.perCorriere).map(([corriere, count]) => (
             <div key={corriere} className="flex items-center gap-2">
               <span
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ backgroundColor: "#8DC63F" }}
+                className="gls-dot"
+                style={{ width: "0.625rem", height: "0.625rem" }}
               />
               <span className="text-sm font-medium text-gray-700">
                 {corriere}
@@ -60,10 +54,8 @@ export default function StatsCards({ spedizioni }: Props) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-        <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-          Per Stato
-        </div>
+      <div className="card p-5">
+        <div className="card-title">Per Stato</div>
         <div className="mt-2 space-y-1">
           {Object.entries(stats.perStato).map(([stato, count]) => (
             <div key={stato} className="flex items-center gap-2">
@@ -76,10 +68,8 @@ export default function StatsCards({ spedizioni }: Props) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-        <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-          Ultima Spedizione
-        </div>
+      <div className="card p-5">
+        <div className="card-title">Ultima Spedizione</div>
         <div className="mt-2 text-xl font-bold text-gray-900">
           {stats.ultimaData
             ? new Date(stats.ultimaData + "T00:00:00").toLocaleDateString(

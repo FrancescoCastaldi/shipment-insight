@@ -45,18 +45,16 @@ export default function AddForm({ onAdded, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Nuova Spedizione
-          </h2>
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h2 className="modal-title">Nuova Spedizione</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="modal-close"
           >
             <svg
-              className="w-5 h-5"
+              className="icon-lg"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -73,13 +71,11 @@ export default function AddForm({ onAdded, onClose }: Props) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Corriere
-            </label>
+            <label className="form-label">Corriere</label>
             <select
               value={corriere}
               onChange={(e) => setCorriere(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
+              className="form-select"
             >
               <option value="GLS">GLS</option>
               <option value="BRT">BRT</option>
@@ -93,7 +89,7 @@ export default function AddForm({ onAdded, onClose }: Props) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="form-label">
               Numero Tracking <span className="text-red-500">*</span>
             </label>
             <input
@@ -101,32 +97,28 @@ export default function AddForm({ onAdded, onClose }: Props) {
               value={tracking}
               onChange={(e) => setTracking(e.target.value)}
               placeholder="Es. CE664369687"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
+              className="form-input font-mono"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descrizione
-            </label>
+            <label className="form-label">Descrizione</label>
             <input
               type="text"
               value={descrizione}
               onChange={(e) => setDescrizione(e.target.value)}
               placeholder="Descrizione della spedizione"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
+              className="form-input"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Data Ordine
-            </label>
+            <label className="form-label">Data Ordine</label>
             <input
               type="date"
               value={dataOrdine}
               onChange={(e) => setDataOrdine(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#8DC63F] focus:border-transparent"
+              className="form-input"
             />
           </div>
 
@@ -146,14 +138,7 @@ export default function AddForm({ onAdded, onClose }: Props) {
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors"
-              style={{ backgroundColor: "#8DC63F" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#6BA32E")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#8DC63F")
-              }
+              className="flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors btn-green"
             >
               Aggiungi
             </button>

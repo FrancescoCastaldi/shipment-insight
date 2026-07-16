@@ -85,7 +85,10 @@
               <th>Description</th>
               <th>Date</th>
               <th>Status</th>
-              <th>Live Status</th>
+              <!-- ▼ NUOVO: colonne Stato Live e Ultimo Aggiornamento ▼ -->
+              <th>Stato</th>
+              <th>Ultimo Aggiornamento</th>
+              <!-- ▲ FINE NUOVO ▲ -->
               <th>Action</th>
             </tr>
           </thead>
@@ -136,7 +139,7 @@
   </div>
 </footer>
 
-<!-- Modal -->
+<!-- Modal: Add Shipment -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
@@ -187,7 +190,7 @@
   </div>
 </div>
 
-<!-- Tracking Detail Modal -->
+<!-- Modal: Tracking Detail -->
 <div class="modal-overlay" id="trackingModalOverlay" onclick="closeTrackingModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
@@ -203,7 +206,51 @@
 </div>
 
 <script>
-// ===== Data =====
+/* =====================================================================
+ * SHIPMENT INSIGHT — Main Application Script
+ * =====================================================================
+ *
+ * Struttura:
+ *   1. CONFIGURAZIONE TRACKING API
+ *   2. DATI DI DEFAULT & STATO
+ *   3. INIZIALIZZAZIONE
+ *   4. RENDER (tabella, stats, email)
+ *   5. CACHE TRACKING (localStorage)
+ *   6. FETCH TRACKING (chiamata al Worker proxy)
+ *   7. AGGIORNAMENTO UI TRACKING (badge, loading, error)
+ *   8. DETAIL MODAL
+ *   9. CRUD SHIPMENTS
+ *  10. MODAL MANAGEMENT
+ *  11. HELPER FUNCTIONS
+ *  12. BOOT
+ * ===================================================================== */
+
+
+/* =====================================================================
+ * 1. CONFIGURAZIONE TRACKING API
+ * =====================================================================
+ * Sostituisci WORKER_URL con l'URL del tuo Cloudflare Worker deployato.
+ * =================================================================== */
+
+const TRACKING_CONFIG = {
+  // URL del Cloudflare Worker proxy — SOSTITUISCI CON IL TUO
+  WORKER_URL: 'https://gls-tracking-proxy.YOUR_SUBDOMAIN.workers.dev',
+
+  // Chiave localStorage per la cache dei risultati tracking
+  CACHE_KEY: 'trackingCache',
+
+  // Durata della cache in millisecondi (4 ore)
+  CACHE_TTL_MS: 4 * 60 * 60 * 1000,
+
+  // Numero massimo di chiamate API concorrenti
+  MAX_CONCURRENT: 3,
+};
+
+
+/* =====================================================================
+ * 2. DATI DI DEFAULT & STATO
+ * =================================================================== */
+
 const DEFAULT_SHIPMENTS = [
   {
     id: '1',
@@ -236,10 +283,13 @@ const DEFAULT_SHIPMENTS = [
 
 const STATUSES = ['Info requested', 'In transit', 'Delivered', 'Pending', 'Exception'];
 
-// ===== State =====
 let shipments = [];
 
-// ===== Init =====
+
+/* =====================================================================
+ * 3. INIZIALIZZAZIONE
+ * =================================================================== */
+
 function init() {
   const stored = localStorage.getItem('shipments');
   if (stored) {
@@ -253,13 +303,19 @@ function init() {
     saveToStorage();
   }
   render();
+  // Avvia il refresh tracking in background dopo il render iniziale
+  initTracking();
 }
 
 function saveToStorage() {
   localStorage.setItem('shipments', JSON.stringify(shipments));
 }
 
-// ===== Render =====
+
+/* =====================================================================
+ * 4. RENDER
+ * =================================================================== */
+
 function render() {
   renderTable();
   renderStats();
@@ -267,6 +323,11 @@ function render() {
   updateEmailText();
 }
 
+/**
+ * Renderizza la tabella delle spedizioni.
+ * Le colonne "Stato" e "Ultimo Aggiornamento" mostrano i dati dalla cache
+ * del tracking (se disponibili), altrimenti mostrano uno stato iniziale.
+ */
 function renderTable() {
   const tbody = document.getElementById('shipmentsBody');
   const empty = document.getElementById('emptyState');
@@ -282,18 +343,27 @@ function renderTable() {
   empty.style.display = 'none';
   count.textContent = shipments.length + ' shipment' + (shipments.length !== 1 ? 's' : '');
 
-  tbody.innerHTML = shipments.map(s => {
-    const statusColor = getStatusColor(s.status);
+  tbody.innerHTML = shipments.map(function(s) {
+    var statusColor = getStatusColor(s.status);
+    var trackingEntry = getTrackingCacheEntry(s.tracking);
+    var liveStatusHtml = buildLiveStatusCellHtml(s, trackingEntry);
+    var lastUpdateHtml = buildLastUpdateCellHtml(trackingEntry);
+
     return '<tr>' +
       '<td><a href="' + s.link + '" target="_blank" rel="noopener noreferrer" class="tracking-link">' + escHtml(s.tracking) + '</a></td>' +
       '<td><span class="courier-badge">' + escHtml(s.courier) + '</span></td>' +
       '<td>' + escHtml(s.description) + '</td>' +
       '<td>' + escHtml(s.date) + '</td>' +
       '<td><span class="status-badge" style="background:' + statusColor.bg + ';color:' + statusColor.text + '">' + escHtml(s.status) + '</span></td>' +
-      '<td><a href="' + s.link + '" target="_blank" rel="noopener noreferrer" class="btn btn-small btn-track">Track</a></td>' +
+      // ▼ NUOVO: Colonna Stato Live ▼
+      '<td class="tracking-cell" data-shipment="' + s.id + '" data-cell="live-status">' + liveStatusHtml + '</td>' +
+      // ▼ NUOVO: Colonna Ultimo Aggiornamento ▼
+      '<td class="tracking-cell" data-shipment="' + s.id + '" data-cell="last-update">' + lastUpdateHtml + '</td>' +
+      // ▲ FINE NUOVO ▲
       '<td class="action-cell">' +
+        '<button class="btn btn-small btn-track" onclick="showTrackingDetail(\'' + s.id + '\')" title="Mostra dettagli tracking">Dettagli</button>' +
         '<select class="status-select" data-id="' + s.id + '" onchange="updateStatus(this)">' +
-          STATUSES.map(st => '<option value="' + st + '"' + (st === s.status ? ' selected' : '') + '>' + st + '</option>').join('') +
+          STATUSES.map(function(st) { return '<option value="' + st + '"' + (st === s.status ? ' selected' : '') + '>' + st + '</option>'; }).join('') +
         '</select>' +
         '<button class="btn-icon" onclick="deleteShipment(\'' + s.id + '\')" title="Delete">' +
           '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V3a1 1 0 011-1h2a1 1 0 011 1v1M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' +
@@ -303,35 +373,63 @@ function renderTable() {
   }).join('');
 }
 
+/**
+ * Genera l'HTML per la cella "Stato" (live tracking).
+ */
+function buildLiveStatusCellHtml(shipment, cache) {
+  if (!cache) {
+    return '<span class="status-badge status-unknown">Da verificare</span>';
+  }
+  var color = getLiveStatusColor(cache.status);
+  var html = '<span class="status-badge" style="background:' + color.bg + ';color:' + color.text + '">' +
+    escHtml(cache.statusLabel) + '</span>';
+  if (cache.location) {
+    html += '<span class="tracking-location">' + escHtml(cache.location) + '</span>';
+  }
+  return html;
+}
+
+/**
+ * Genera l'HTML per la cella "Ultimo Aggiornamento".
+ */
+function buildLastUpdateCellHtml(cache) {
+  if (!cache || !cache.lastUpdate) {
+    return '<span class="text-muted">&mdash;</span>';
+  }
+  return '<span class="tracking-date">' + formatDateIT(cache.lastUpdate) + '</span>';
+}
+
 function renderStats() {
   document.getElementById('statTotal').textContent = shipments.length;
 
-  const courierCount = {};
-  const statusCount = {};
-  let latestDate = '';
+  var courierCount = {};
+  var statusCount = {};
+  var latestDate = '';
 
-  shipments.forEach(s => {
+  shipments.forEach(function(s) {
     courierCount[s.courier] = (courierCount[s.courier] || 0) + 1;
     statusCount[s.status] = (statusCount[s.status] || 0) + 1;
     if (s.date > latestDate) latestDate = s.date;
   });
 
-  document.getElementById('statCourier').textContent = Object.entries(courierCount).map(([k, v]) => k + ': ' + v).join(', ');
-  document.getElementById('statStatus').textContent = Object.entries(statusCount).map(([k, v]) => k + ': ' + v).join(', ');
+  document.getElementById('statCourier').textContent =
+    Object.keys(courierCount).map(function(k) { return k + ': ' + courierCount[k]; }).join(', ');
+  document.getElementById('statStatus').textContent =
+    Object.keys(statusCount).map(function(k) { return k + ': ' + statusCount[k]; }).join(', ');
   document.getElementById('statLatest').textContent = latestDate || '-';
 }
 
 function renderEmailSelect() {
-  const sel = document.getElementById('emailSelect');
-  sel.innerHTML = shipments.map(s =>
-    '<option value="' + s.id + '">' + escHtml(s.tracking) + ' - ' + escHtml(s.description) + '</option>'
-  ).join('');
+  var sel = document.getElementById('emailSelect');
+  sel.innerHTML = shipments.map(function(s) {
+    return '<option value="' + s.id + '">' + escHtml(s.tracking) + ' - ' + escHtml(s.description) + '</option>';
+  }).join('');
 }
 
 function updateEmailText() {
-  const sel = document.getElementById('emailSelect');
-  const ta = document.getElementById('emailText');
-  const s = shipments.find(x => x.id === sel.value);
+  var sel = document.getElementById('emailSelect');
+  var ta = document.getElementById('emailText');
+  var s = shipments.find(function(x) { return x.id === sel.value; });
   if (!s) {
     ta.value = '';
     return;
@@ -350,10 +448,10 @@ function updateEmailText() {
 }
 
 function copyEmailText() {
-  const ta = document.getElementById('emailText');
+  var ta = document.getElementById('emailText');
   navigator.clipboard.writeText(ta.value).then(function() {
-    const btn = document.querySelector('.btn-group .btn-secondary');
-    const orig = btn.textContent;
+    var btn = document.querySelector('.btn-group .btn-secondary');
+    var orig = btn.textContent;
     btn.textContent = 'Copied!';
     setTimeout(function() { btn.textContent = orig; }, 2000);
   }).catch(function() {
@@ -363,27 +461,354 @@ function copyEmailText() {
 }
 
 function openMailClient() {
-  const ta = document.getElementById('emailText');
-  const lines = ta.value.split('\n');
-  const subjectLine = lines[0].replace('Subject: ', '');
-  const body = lines.slice(2).join('\n');
+  var ta = document.getElementById('emailText');
+  var lines = ta.value.split('\n');
+  var subjectLine = lines[0].replace('Subject: ', '');
+  var body = lines.slice(2).join('\n');
   window.location.href = 'mailto:support@gls-italy.com?subject=' + encodeURIComponent(subjectLine) + '&body=' + encodeURIComponent(body);
 }
 
-// ===== CRUD =====
+
+/* =====================================================================
+ * 5. CACHE TRACKING (localStorage)
+ * =====================================================================
+ * Struttura cache:
+ *   {
+ *     "CE664369687": {
+ *       status: "transit",
+ *       statusLabel: "In Transito",
+ *       lastUpdate: "2026-07-16T10:00:00Z",
+ *       location: "Hub Milano",
+ *       events: [...],
+ *       fetchedAt: 1689512400000   ← timestamp del fetch
+ *     }
+ *   }
+ * =================================================================== */
+
+function getTrackingCache() {
+  try {
+    var raw = localStorage.getItem(TRACKING_CONFIG.CACHE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function setTrackingCache(cache) {
+  try {
+    localStorage.setItem(TRACKING_CONFIG.CACHE_KEY, JSON.stringify(cache));
+  } catch (e) {
+    // localStorage pieno? Rimuovi entry vecchie
+    console.warn('Cache write failed, clearing old entries', e);
+    pruneTrackingCache(cache);
+  }
+}
+
+function getTrackingCacheEntry(trackingNumber) {
+  var cache = getTrackingCache();
+  return cache[trackingNumber] || null;
+}
+
+function setTrackingCacheEntry(trackingNumber, data) {
+  var cache = getTrackingCache();
+  cache[trackingNumber] = Object.assign({}, data, { fetchedAt: Date.now() });
+  setTrackingCache(cache);
+}
+
+function isTrackingCacheStale(trackingNumber) {
+  var entry = getTrackingCacheEntry(trackingNumber);
+  if (!entry || !entry.fetchedAt) return true;
+  return (Date.now() - entry.fetchedAt) > TRACKING_CONFIG.CACHE_TTL_MS;
+}
+
+/**
+ * Rimuove le entry più vecchie dalla cache per liberare spazio.
+ */
+function pruneTrackingCache(currentCache) {
+  var entries = Object.keys(currentCache).map(function(key) {
+    return { key: key, fetchedAt: currentCache[key].fetchedAt || 0 };
+  });
+  entries.sort(function(a, b) { return a.fetchedAt - b.fetchedAt; });
+
+  // Tieni solo le ultime 50 entry
+  var pruned = {};
+  entries.slice(-50).forEach(function(e) {
+    pruned[e.key] = currentCache[e.key];
+  });
+  localStorage.setItem(TRACKING_CONFIG.CACHE_KEY, JSON.stringify(pruned));
+}
+
+
+/* =====================================================================
+ * 6. FETCH TRACKING (chiamata al Worker proxy)
+ * ===================================================================== */
+
+/**
+ * Chiama il Worker proxy per ottenere i dati di tracking.
+ * Restituisce una Promise con i dati normalizzati.
+ */
+async function fetchTrackingFromAPI(trackingNumber, courier) {
+  var url = TRACKING_CONFIG.WORKER_URL +
+    '/api/tracking?number=' + encodeURIComponent(trackingNumber) +
+    '&courier=' + encodeURIComponent(courier.toLowerCase());
+
+  var response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+  }
+
+  var result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || 'Errore sconosciuto dal proxy');
+  }
+
+  return result.data;
+}
+
+/**
+ * Aggiorna il tracking per una singola spedizione.
+ * 1. Mostra spinner nella riga
+ * 2. Chiama l'API
+ * 3. Aggiorna cache e UI
+ */
+async function fetchAndUpdateTracking(shipmentId) {
+  var s = shipments.find(function(x) { return x.id === shipmentId; });
+  if (!s) return;
+
+  // Mostra loading
+  setTrackingLoadingUI(shipmentId, true);
+
+  try {
+    var data = await fetchTrackingFromAPI(s.tracking, s.courier);
+
+    // Salva in cache
+    setTrackingCacheEntry(s.tracking, data);
+
+    // Aggiorna la UI della riga
+    setTrackingSuccessUI(shipmentId, data);
+  } catch (err) {
+    console.error('Tracking error per ' + s.tracking + ':', err.message);
+    setTrackingErrorUI(shipmentId, err.message);
+  }
+}
+
+/**
+ * Inizializza il tracking all'avvio della pagina.
+ * Controlla la cache: se dati freschi → mostra subito.
+ * Se stale → fetch in background (silenzioso).
+ */
+function initTracking() {
+  var stale = shipments.filter(function(s) { return isTrackingCacheStale(s.tracking); });
+
+  if (stale.length === 0) return;
+
+  // Processa in batch per non sovraccaricare l'API
+  processBatch(stale, 0);
+}
+
+async function processBatch(items, startIndex) {
+  var batch = items.slice(startIndex, startIndex + TRACKING_CONFIG.MAX_CONCURRENT);
+  if (batch.length === 0) return;
+
+  // Lancia tutti i fetch del batch in parallelo
+  await Promise.all(batch.map(function(s) {
+    return fetchAndUpdateTracking(s.id);
+  }));
+
+  // Processa il batch successivo
+  if (startIndex + TRACKING_CONFIG.MAX_CONCURRENT < items.length) {
+    processBatch(items, startIndex + TRACKING_CONFIG.MAX_CONCURRENT);
+  }
+}
+
+
+/* =====================================================================
+ * 7. AGGIORNAMENTO UI TRACKING
+ * =====================================================================
+ * Funzioni per aggiornare le celle della tabella senza re-render completo.
+ * =================================================================== */
+
+/**
+ * Mostra/nasconde lo spinner di loading nella riga.
+ */
+function setTrackingLoadingUI(shipmentId, loading) {
+  var statusCell = document.querySelector(
+    '[data-shipment="' + shipmentId + '"][data-cell="live-status"]'
+  );
+  var updateCell = document.querySelector(
+    '[data-shipment="' + shipmentId + '"][data-cell="last-update"]'
+  );
+
+  if (loading) {
+    if (statusCell) statusCell.innerHTML = '<span class="tracking-spinner"></span>';
+    if (updateCell) updateCell.innerHTML = '<span class="tracking-spinner"></span>';
+  }
+}
+
+/**
+ * Aggiorna la riga con i dati di successo dal tracking.
+ */
+function setTrackingSuccessUI(shipmentId, data) {
+  var statusCell = document.querySelector(
+    '[data-shipment="' + shipmentId + '"][data-cell="live-status"]'
+  );
+  var updateCell = document.querySelector(
+    '[data-shipment="' + shipmentId + '"][data-cell="last-update"]'
+  );
+
+  if (statusCell) {
+    var color = getLiveStatusColor(data.status);
+    var html = '<span class="status-badge" style="background:' + color.bg + ';color:' + color.text + '">' +
+      escHtml(data.statusLabel) + '</span>';
+    if (data.location) {
+      html += '<span class="tracking-location">' + escHtml(data.location) + '</span>';
+    }
+    statusCell.innerHTML = html;
+  }
+
+  if (updateCell) {
+    updateCell.innerHTML = data.lastUpdate
+      ? '<span class="tracking-date">' + formatDateIT(data.lastUpdate) + '</span>'
+      : '<span class="text-muted">&mdash;</span>';
+  }
+}
+
+/**
+ * Aggiorna la riga con lo stato di errore.
+ */
+function setTrackingErrorUI(shipmentId, errorMsg) {
+  var statusCell = document.querySelector(
+    '[data-shipment="' + shipmentId + '"][data-cell="live-status"]'
+  );
+  var updateCell = document.querySelector(
+    '[data-shipment="' + shipmentId + '"][data-cell="last-update"]'
+  );
+
+  if (statusCell) {
+    statusCell.innerHTML =
+      '<span class="status-badge status-error" title="' + escHtml(errorMsg) + '">Errore</span>' +
+      '<button class="btn-icon btn-retry" onclick="fetchAndUpdateTracking(\'' + shipmentId + '\')" title="Riprova">' +
+        '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0111.47-2.47M14 2v4h-4M14 8a6 6 0 01-11.47 2.47M2 14v-4h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+      '</button>';
+  }
+
+  if (updateCell) {
+    updateCell.innerHTML = '<span class="text-muted">&mdash;</span>';
+  }
+}
+
+
+/* =====================================================================
+ * 8. DETAIL MODAL
+ * =====================================================================
+ * Mostra i dettagli completi del tracking in un modal.
+ * Usa i dati dalla cache se freschi, altrimenti fetch.
+ * =================================================================== */
+
+async function showTrackingDetail(shipmentId) {
+  var s = shipments.find(function(x) { return x.id === shipmentId; });
+  if (!s) return;
+
+  var content = document.getElementById('trackingModalContent');
+
+  // Mostra modal con loading
+  content.innerHTML =
+    '<div style="text-align:center;padding:24px">' +
+      '<span class="tracking-spinner" style="width:32px;height:32px"></span>' +
+      '<p style="margin-top:12px;color:#6b7280">Caricamento tracking...</p>' +
+    '</div>';
+  document.getElementById('trackingModalOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  try {
+    // Usa cache se fresca, altrimenti fetch
+    var data = getTrackingCacheEntry(s.tracking);
+    if (!data || isTrackingCacheStale(s.tracking)) {
+      data = await fetchTrackingFromAPI(s.tracking, s.courier);
+      setTrackingCacheEntry(s.tracking, data);
+      // Aggiorna anche la cella nella tabella
+      setTrackingSuccessUI(shipmentId, data);
+    }
+
+    var color = getLiveStatusColor(data.status);
+
+    // Costruisci HTML eventi
+    var eventsHtml = '';
+    if (data.events && data.events.length > 0) {
+      eventsHtml =
+        '<div class="tracking-detail-history">' +
+          '<h4>Cronologia Eventi</h4>' +
+          '<table class="history-table">' +
+            '<thead><tr><th>Data</th><th>Stato</th><th>Dettagli</th></tr></thead>' +
+            '<tbody>' +
+              data.events.map(function(e) {
+                return '<tr>' +
+                  '<td>' + escHtml(e.date || '&mdash;') + '</td>' +
+                  '<td>' + escHtml(e.status || '&mdash;') + '</td>' +
+                  '<td>' + escHtml(e.details || '&mdash;') + '</td>' +
+                '</tr>';
+              }).join('') +
+            '</tbody>' +
+          '</table>' +
+        '</div>';
+    } else {
+      eventsHtml = '<p class="no-history">Nessun evento di tracking disponibile.</p>';
+    }
+
+    content.innerHTML =
+      '<div class="tracking-detail-header">' +
+        '<h3>' + escHtml(s.tracking) + '</h3>' +
+        '<div class="tracking-detail-courier">' + escHtml(s.courier) + ' &mdash; ' + escHtml(s.description) + '</div>' +
+      '</div>' +
+      '<div class="tracking-detail-status">' +
+        '<span class="status-badge" style="background:' + color.bg + ';color:' + color.text + ';font-size:0.9rem;padding:6px 14px">' +
+          escHtml(data.statusLabel) +
+        '</span>' +
+        (data.location
+          ? '<span style="margin-left:10px;color:#6b7280;font-size:0.85rem">\u{1F4CD} ' + escHtml(data.location) + '</span>'
+          : '') +
+        (data.lastUpdate
+          ? '<div style="margin-top:8px;font-size:0.8rem;color:#9ca3af">Ultimo aggiornamento: ' + formatDateIT(data.lastUpdate) + '</div>'
+          : '') +
+      '</div>' +
+      eventsHtml +
+      '<div style="margin-top:20px;padding-top:16px;border-top:1px solid #e5e7eb">' +
+        '<a href="' + s.link + '" target="_blank" rel="noopener noreferrer" class="btn btn-small btn-track">Apri su GLS \u2192</a>' +
+      '</div>';
+
+  } catch (err) {
+    content.innerHTML =
+      '<div style="text-align:center;padding:24px">' +
+        '<p style="color:#ef4444;font-weight:600">Errore nel caricamento</p>' +
+        '<p style="color:#6b7280;font-size:0.85rem;margin-top:4px">' + escHtml(err.message) + '</p>' +
+        '<button class="btn btn-primary" style="margin-top:16px" onclick="showTrackingDetail(\'' + shipmentId + '\')">Riprova</button>' +
+        '<div style="margin-top:12px">' +
+          '<a href="' + s.link + '" target="_blank" rel="noopener noreferrer" class="btn btn-small btn-track">Apri su GLS \u2192</a>' +
+        '</div>' +
+      '</div>';
+  }
+}
+
+
+/* =====================================================================
+ * 9. CRUD SHIPMENTS
+ * =================================================================== */
+
 function addShipment(event) {
   event.preventDefault();
-  const tracking = document.getElementById('inputTracking').value.trim();
-  const courier = document.getElementById('inputCourier').value;
-  const description = document.getElementById('inputDescription').value.trim();
-  const date = document.getElementById('inputDate').value;
-  const status = document.getElementById('inputStatus').value;
+  var tracking = document.getElementById('inputTracking').value.trim();
+  var courier = document.getElementById('inputCourier').value;
+  var description = document.getElementById('inputDescription').value.trim();
+  var date = document.getElementById('inputDate').value;
+  var status = document.getElementById('inputStatus').value;
 
   if (!tracking || !date) return;
 
-  const trackingLink = getTrackingLink(tracking, courier);
+  var trackingLink = getTrackingLink(tracking, courier);
 
-  const newShipment = {
+  var newShipment = {
     id: Date.now().toString(),
     tracking: tracking,
     courier: courier,
@@ -398,18 +823,21 @@ function addShipment(event) {
   render();
   closeModal();
   document.getElementById('addForm').reset();
+
+  // Fetch tracking per la nuova spedizione
+  fetchAndUpdateTracking(newShipment.id);
 }
 
 function deleteShipment(id) {
   if (!confirm('Delete this shipment?')) return;
-  shipments = shipments.filter(s => s.id !== id);
+  shipments = shipments.filter(function(s) { return s.id !== id; });
   saveToStorage();
   render();
 }
 
 function updateStatus(select) {
-  const id = select.dataset.id;
-  const s = shipments.find(x => x.id === id);
+  var id = select.dataset.id;
+  var s = shipments.find(function(x) { return x.id === id; });
   if (s) {
     s.status = select.value;
     saveToStorage();
@@ -418,18 +846,22 @@ function updateStatus(select) {
 }
 
 function getTrackingLink(tracking, courier) {
-  const upper = tracking.toUpperCase();
+  var upper = tracking.toUpperCase();
   if (courier === 'GLS') {
     if (upper.startsWith('CE')) {
       return 'https://gls-group.com/IT/it/servizi-online/ricerca-spedizioni?match=' + encodeURIComponent(tracking) + '&type=NAT';
     }
-    const num = tracking.replace(/\D/g, '');
+    var num = tracking.replace(/\D/g, '');
     return 'https://www.gls-italy.com/index.php?option=com_gls&view=track_e_trace&mode=search&diretto=yes&locpartenza=CE&numsped=' + num + '&lnk=1';
   }
   return '#';
 }
 
-// ===== Modal =====
+
+/* =====================================================================
+ * 10. MODAL MANAGEMENT
+ * =================================================================== */
+
 function openModal() {
   document.getElementById('modalOverlay').classList.add('active');
   document.body.style.overflow = 'hidden';
@@ -442,75 +874,106 @@ function closeModal(e) {
   document.body.style.overflow = '';
 }
 
-// ===== Helpers =====
-function getStatusColor(status) {
-  const map = {
-    'Info requested': { bg: '#fef3c7', text: '#92400e' },
-    'In transit': { bg: '#dbeafe', text: '#1e40af' },
-    'Delivered': { bg: '#d1fae5', text: '#065f46' },
-    'Pending': { bg: '#f3f4f6', text: '#374151' },
-    'Exception': { bg: '#fee2e2', text: '#991b1b' }
-  };
-  return map[status] || { bg: '#f3f4f6', text: '#374151' };
-}
-
-function escHtml(str) {
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
-}
-
-// ===== Live Tracking via iframe =====
-function getTrackingUrl(shipment) {
-  if (shipment.courier === 'GLS') {
-    const num = shipment.tracking.replace(/[^0-9]/g, '');
-    const prefix = shipment.tracking.replace(/[0-9]/g, '').trim();
-    if (prefix) {
-      return 'https://www.gls-italy.com/index.php?option=com_gls&view=track_e_trace&mode=search&diretto=yes&locpartenza=' + prefix + '&numsped=' + num + '&lnk=1&lang=it';
-    }
-  }
-  return shipment.link || '#';
-}
-
-function checkAndShow(id) {
-  const s = shipments.find(function(x) { return x.id === id; });
-  if (!s) return;
-  showTrackingIframe(id);
-}
-
-function showTrackingIframe(id) {
-  const s = shipments.find(function(x) { return x.id === id; });
-  if (!s) return;
-
-  const url = getTrackingUrl(s);
-  const content = document.getElementById('trackingModalContent');
-  content.innerHTML = '<div class="iframe-container">' +
-    '<p style="margin-bottom:12px"><strong>' + escHtml(s.tracking) + '</strong> - ' + escHtml(s.courier) + '</p>' +
-    '<iframe src="' + escHtml(url) + '" style="width:100%;height:500px;border:1px solid #e5e7eb;border-radius:8px" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>' +
-  '</div>';
-
-  document.getElementById('trackingModalOverlay').classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-
-function checkAll() {
-  for (var i = 0; i < shipments.length; i++) {
-    var url = getTrackingUrl(shipments[i]);
-    window.open(url, '_blank');
-  }
-}
-
-function refreshAll() {
-  init();
-}
-
 function closeTrackingModal(e) {
   if (e && e.target !== e.currentTarget) return;
   document.getElementById('trackingModalOverlay').classList.remove('active');
   document.body.style.overflow = '';
 }
 
-// Keyboard shortcut
+
+/* =====================================================================
+ * 11. HELPER FUNCTIONS
+ * =================================================================== */
+
+/**
+ * Colori per lo status manuale (esistente).
+ */
+function getStatusColor(status) {
+  var map = {
+    'Info requested': { bg: '#fef3c7', text: '#92400e' },
+    'In transit':     { bg: '#dbeafe', text: '#1e40af' },
+    'Delivered':      { bg: '#d1fae5', text: '#065f46' },
+    'Pending':        { bg: '#f3f4f6', text: '#374151' },
+    'Exception':      { bg: '#fee2e2', text: '#991b1b' }
+  };
+  return map[status] || { bg: '#f3f4f6', text: '#374151' };
+}
+
+/**
+ * Colori per lo stato live tracking (API).
+ * Verde = Consegnato, Giallo = In Transito/Consegna, Rosso = Anomalia, Blu = Info, Grigio = Altro
+ */
+function getLiveStatusColor(status) {
+  var map = {
+    'delivered':     { bg: '#d1fae5', text: '#065f46' },   // Verde
+    'transit':       { bg: '#dbeafe', text: '#1e40af' },   // Blu
+    'pickup':        { bg: '#fef3c7', text: '#92400e' },   // Giallo
+    'inforeceived':  { bg: '#dbeafe', text: '#1e40af' },   // Blu
+    'pending':       { bg: '#f3f4f6', text: '#374151' },   // Grigio
+    'notfound':      { bg: '#f3f4f6', text: '#6b7280' },   // Grigio chiaro
+    'exception':     { bg: '#fee2e2', text: '#991b1b' },   // Rosso
+    'undelivered':   { bg: '#fee2e2', text: '#991b1b' },   // Rosso
+    'expired':       { bg: '#fef2f2', text: '#7f1d1d' },   // Rosso scuro
+  };
+  return map[(status || '').toLowerCase()] || { bg: '#f3f4f6', text: '#6b7280' };
+}
+
+/**
+ * Escape HTML per prevenire XSS.
+ */
+function escHtml(str) {
+  if (str == null) return '';
+  var d = document.createElement('div');
+  d.textContent = String(str);
+  return d.innerHTML;
+}
+
+/**
+ * Formatta una data ISO in formato italiano leggibile.
+ * es. "16 Lug 2026, 10:00"
+ */
+function formatDateIT(dateStr) {
+  if (!dateStr) return '\u2014';
+  try {
+    var d = new Date(dateStr);
+    if (isNaN(d.getTime())) return escHtml(dateStr);
+    var months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+    return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() +
+      ', ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  } catch (e) {
+    return escHtml(dateStr);
+  }
+}
+
+
+/* =====================================================================
+ * 12. REFRESH & CHECK ALL
+ * =================================================================== */
+
+/**
+ * "Check All" — aggiorna tutti i tracking stale via API.
+ * Non apre più schede esterne.
+ */
+function checkAll() {
+  shipments.forEach(function(s) {
+    // Forza refresh: marca come stale e fetch
+    var cache = getTrackingCache();
+    if (cache[s.tracking]) {
+      cache[s.tracking].fetchedAt = 0; // Forza stale
+      setTrackingCache(cache);
+    }
+    fetchAndUpdateTracking(s.id);
+  });
+}
+
+/**
+ * "Refresh" — ricarica da localStorage e re-inizializza il tracking.
+ */
+function refreshAll() {
+  init();
+}
+
+// Keyboard shortcut: Escape chiude i modal
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     closeModal({ target: document.getElementById('modalOverlay'), currentTarget: document.getElementById('modalOverlay') });
@@ -518,7 +981,11 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// ===== Boot =====
+
+/* =====================================================================
+ * 13. BOOT
+ * =================================================================== */
+
 init();
 </script>
 

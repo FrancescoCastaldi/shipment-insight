@@ -22,7 +22,7 @@ export default function AddForm({ onAdded, onClose }: Props) {
     setError("");
 
     if (!tracking.trim()) {
-      setError("Il numero di tracking è obbligatorio");
+      setError("Tracking number is required");
       return;
     }
 
@@ -32,7 +32,7 @@ export default function AddForm({ onAdded, onClose }: Props) {
       tracking: tracking.trim(),
       descrizione: descrizione.trim(),
       data_ordine: dataOrdine,
-      stato: "In attesa",
+      stato: "Pending",
     };
 
     // Salva in localStorage
@@ -48,7 +48,7 @@ export default function AddForm({ onAdded, onClose }: Props) {
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h2 className="modal-title">Nuova Spedizione</h2>
+          <h2 className="modal-title">Add Shipment</h2>
           <button
             onClick={onClose}
             className="modal-close"
@@ -71,7 +71,7 @@ export default function AddForm({ onAdded, onClose }: Props) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="form-label">Corriere</label>
+            <label className="form-label">Courier</label>
             <select
               value={corriere}
               onChange={(e) => setCorriere(e.target.value)}
@@ -84,36 +84,36 @@ export default function AddForm({ onAdded, onClose }: Props) {
               <option value="TNT">TNT</option>
               <option value="UPS">UPS</option>
               <option value="FedEx">FedEx</option>
-              <option value="Altro">Altro</option>
+              <option value="Altro">Other</option>
             </select>
           </div>
 
           <div>
             <label className="form-label">
-              Numero Tracking <span className="text-red-500">*</span>
+              Tracking Number <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={tracking}
               onChange={(e) => setTracking(e.target.value)}
-              placeholder="Es. CE664369687"
+              placeholder="e.g. CE664369687"
               className="form-input font-mono"
             />
           </div>
 
           <div>
-            <label className="form-label">Descrizione</label>
+            <label className="form-label">Description</label>
             <input
               type="text"
               value={descrizione}
               onChange={(e) => setDescrizione(e.target.value)}
-              placeholder="Descrizione della spedizione"
+              placeholder="Shipment description"
               className="form-input"
             />
           </div>
 
           <div>
-            <label className="form-label">Data Ordine</label>
+            <label className="form-label">Order Date</label>
             <input
               type="date"
               value={dataOrdine}
@@ -134,13 +134,13 @@ export default function AddForm({ onAdded, onClose }: Props) {
               onClick={onClose}
               className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              Annulla
+              Cancel
             </button>
             <button
               type="submit"
               className="flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors btn-green"
             >
-              Aggiungi
+              Add
             </button>
           </div>
         </form>

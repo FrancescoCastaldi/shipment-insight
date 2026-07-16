@@ -18,37 +18,31 @@ export default function EmailPanel({ spedizioni, onStatusChange }: Props) {
   const spedizioneSelezionata = spedizioni.find((s) => s.id === selectedId);
 
   const generaOggetto = () => {
-    if (!spedizioneSelezionata) return "Richiesta informazioni spedizione";
-    return `Richiesta informazioni - Spedizione ${spedizioneSelezionata.tracking}`;
+    if (!spedizioneSelezionata) return "Shipment information request";
+    return `Shipment info request - ${spedizioneSelezionata.tracking}`;
   };
 
   const generaCorpo = () => {
     if (!spedizioneSelezionata) return "";
     const s = spedizioneSelezionata;
-    return `Buongiorno,
+    return `Dear GLS Customer Service,
 
-sto richiedendo informazioni riguardo la seguente spedizione:
+I would like to request information about the following shipments:
 
-Numero Tracking: ${s.tracking}
-Corriere: ${s.corriere}
-Descrizione: ${s.descrizione}
-Data Ordine: ${new Date(s.data_ordine + "T00:00:00").toLocaleDateString(
-      "it-IT",
-      { day: "numeric", month: "long", year: "numeric" }
-    )}
-Stato Attuale: ${s.stato}
+- ${s.tracking}
 
-Link tracking: ${s.link_tracking || "N/D"}
+I haven't received any updates and would like to know their current status.
 
-Potreste fornirmi un aggiornamento sullo stato della spedizione?
+Thank you.
 
-Cordiali saluti`;
+Best regards,
+Francesco Castaldi`;
   };
 
   const handleCopiaTesto = async () => {
-    const testo = `A: ${DESTINATARIO_FISSO}
+    const testo = `To: ${DESTINATARIO_FISSO}
 CC: ${CC_FISSO}
-Oggetto: ${generaOggetto()}
+Subject: ${generaOggetto()}
 
 ${generaCorpo()}`;
 
@@ -57,12 +51,12 @@ ${generaCorpo()}`;
       setCopiato(true);
       setTimeout(() => setCopiato(false), 2000);
 
-      // Aggiorna lo stato della spedizione
+      // Update the shipment status
       if (selectedId) {
-        onStatusChange(selectedId, "Richiesta info inviata");
+        onStatusChange(selectedId, "Info requested");
       }
     } catch {
-      // Fallback per browser che non supportano clipboard API
+      // Fallback for browsers that don't support clipboard API
       const textarea = document.createElement("textarea");
       textarea.value = testo;
       document.body.appendChild(textarea);
@@ -73,12 +67,12 @@ ${generaCorpo()}`;
       setTimeout(() => setCopiato(false), 2000);
 
       if (selectedId) {
-        onStatusChange(selectedId, "Richiesta info inviata");
+        onStatusChange(selectedId, "Info requested");
       }
     }
   };
 
-  // Costruisci il link mailto per apertura client email locale
+  // Build mailto link for local email client
   const mailtoLink = () => {
     const oggetto = encodeURIComponent(generaOggetto());
     const corpo = encodeURIComponent(generaCorpo());
@@ -88,18 +82,18 @@ ${generaCorpo()}`;
   return (
     <div className="card p-5">
       <h3 className="font-semibold text-gray-900 mb-4">
-        Richiesta Informazioni Spedizione
+        Request Shipment Info
       </h3>
 
       <div className="space-y-4">
         <div>
-          <label className="form-label">Spedizione</label>
+          <label className="form-label">Shipment</label>
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
             className="form-select"
           >
-            <option value="">Seleziona una spedizione...</option>
+            <option value="">Select a shipment...</option>
             {spedizioni.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.tracking} - {s.descrizione}
@@ -109,13 +103,13 @@ ${generaCorpo()}`;
         </div>
 
         <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 text-xs text-gray-600">
-          <p><strong>Destinatario:</strong> {DESTINATARIO_FISSO}</p>
+          <p><strong>To:</strong> {DESTINATARIO_FISSO}</p>
           <p><strong>CC:</strong> {CC_FISSO}</p>
         </div>
 
         {spedizioneSelezionata && (
           <div>
-            <label className="form-label">Anteprima Email</label>
+            <label className="form-label">Email Preview</label>
             <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 text-sm text-gray-700 whitespace-pre-wrap font-mono text-xs leading-relaxed max-h-48 overflow-y-auto">
               {generaCorpo()}
             </div>
@@ -124,7 +118,7 @@ ${generaCorpo()}`;
 
         {copiato && (
           <div className="text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">
-            Testo copiato negli appunti!
+            Copied!
           </div>
         )}
 
@@ -134,7 +128,7 @@ ${generaCorpo()}`;
             disabled={!selectedId}
             className="btn btn-green w-full disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Copia Testo Email
+            Copy Email Text
           </button>
 
           <a
@@ -143,7 +137,7 @@ ${generaCorpo()}`;
               !selectedId ? "opacity-50 pointer-events-none" : ""
             }`}
           >
-            Apri nel Client Email
+            Open in Email Client
           </a>
         </div>
       </div>

@@ -31,10 +31,10 @@ export default function SpedizioniList({
           />
         </svg>
         <h3 className="mt-4 text-lg font-semibold text-gray-900">
-          Nessuna spedizione
+          No shipments
         </h3>
         <p className="mt-1 text-sm text-gray-500">
-          Aggiungi la prima spedizione per iniziare.
+          Add your first shipment to get started.
         </p>
       </div>
     );

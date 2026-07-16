@@ -21,7 +21,7 @@ export default function Dashboard() {
   }, [caricaSpedizioni]);
 
   const handleDelete = (id: string) => {
-    if (!confirm("Sei sicuro di voler eliminare questa spedizione?")) return;
+    if (!confirm("Are you sure you want to delete this shipment?")) return;
     const aggiornate = spedizioni.filter((s) => s.id !== id);
     saveSpedizioni(aggiornate);
     setSpedizioni(aggiornate);
@@ -65,8 +65,8 @@ export default function Dashboard() {
                 </svg>
               </div>
               <div>
-                <h1 className="header-title">Spedizioni Tracker</h1>
-                <p className="header-subtitle">Monitoraggio spedizioni GLS</p>
+                <h1 className="header-title">Shipment Insight</h1>
+                <p className="header-subtitle">GLS Shipment Monitor</p>
               </div>
             </div>
             <div className="header-actions">
@@ -87,7 +87,7 @@ export default function Dashboard() {
                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                   />
                 </svg>
-                Aggiorna
+                Refresh
               </button>
               <button
                 onClick={() => setShowAddForm(true)}
@@ -106,7 +106,7 @@ export default function Dashboard() {
                     d="M12 4v16m8-8H4"
                   />
                 </svg>
-                Aggiungi Spedizione
+                Add Shipment
               </button>
             </div>
           </div>
@@ -129,22 +129,22 @@ export default function Dashboard() {
                   <thead>
                     <tr className="table-header">
                       <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Tracking
+                        Tracking #
                       </th>
                       <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Corriere
+                        Courier
                       </th>
                       <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Descrizione
+                        Description
                       </th>
                       <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Data
+                        Date
                       </th>
                       <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Stato
+                        Status
                       </th>
                       <th className="text-right px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Azioni
+                        Actions
                       </th>
                     </tr>
                   </thead>
@@ -153,7 +153,7 @@ export default function Dashboard() {
                       <tr>
                         <td colSpan={6} className="px-6 py-12 text-center">
                           <div className="text-gray-500">
-                            Nessuna spedizione trovata
+                            No shipments found
                           </div>
                         </td>
                       </tr>
@@ -174,7 +174,7 @@ export default function Dashboard() {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="link-ext"
-                                  title="Apri tracking"
+                                  title="Open tracking"
                                 >
                                   <svg
                                     className="icon-sm"
@@ -220,9 +220,9 @@ export default function Dashboard() {
                           <td className="px-6 py-4">
                             <span
                               className={`badge ${
-                                spedizione.stato.includes("inviata")
+                                spedizione.stato.includes("Info requested")
                                   ? "badge-blue"
-                                  : spedizione.stato.includes("Consegnata")
+                                  : spedizione.stato.includes("Delivered")
                                   ? "badge-green"
                                   : "badge-yellow"
                               }`}
@@ -236,18 +236,18 @@ export default function Dashboard() {
                                 onClick={() =>
                                   handleStatusChange(
                                     spedizione.id,
-                                    "Richiesta info inviata"
+                                    "Info requested"
                                   )
                                 }
                                 className="btn btn-sm btn-blue"
                               >
-                                Aggiorna
+                                Update
                               </button>
                               <button
                                 onClick={() => handleDelete(spedizione.id)}
                                 className="btn btn-sm btn-red"
                               >
-                                Elimina
+                                Delete
                               </button>
                             </div>
                           </td>
@@ -262,7 +262,7 @@ export default function Dashboard() {
               <div className="lg:hidden p-4">
                 {spedizioni.length === 0 ? (
                   <div className="empty-state">
-                    Nessuna spedizione trovata
+                    No shipments found
                   </div>
                 ) : (
                   <SpedizioniList

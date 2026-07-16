@@ -3,27 +3,27 @@
     "id": "1",
     "corriere": "GLS",
     "tracking": "CE664369687",
-    "descrizione": "Spedizione in arrivo",
+    "descrizione": "Incoming shipment",
     "data_ordine": "2026-07-13",
-    "stato": "Richiesta info inviata",
+    "stato": "Info requested",
     "link_tracking": "https://gls-group.com/IT/it/servizi-online/ricerca-spedizioni?match=CE664369687&type=NAT"
   },
   {
     "id": "2",
     "corriere": "GLS",
     "tracking": "SA662583604",
-    "descrizione": "Rettifica notifica spedizione",
+    "descrizione": "Shipment notice correction",
     "data_ordine": "2026-07-15",
-    "stato": "Richiesta info inviata",
+    "stato": "Info requested",
     "link_tracking": "https://www.gls-italy.com/index.php?option=com_gls&view=track_e_trace&mode=search&diretto=yes&locpartenza=CE&numsped=662583604&lnk=1"
   },
   {
     "id": "3",
     "corriere": "GLS",
     "tracking": "VB660343413",
-    "descrizione": "Spedizione da monitorare",
+    "descrizione": "Shipment to monitor",
     "data_ordine": "2026-07-14",
-    "stato": "Richiesta info inviata",
+    "stato": "Info requested",
     "link_tracking": "https://www.gls-italy.com/index.php?option=com_gls&view=track_e_trace&mode=search&diretto=yes&locpartenza=CE&numsped=660343413&lnk=1"
   }
 ]

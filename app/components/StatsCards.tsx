@@ -30,12 +30,12 @@ export default function StatsCards({ spedizioni }: Props) {
   return (
     <div className="stats-grid">
       <div className="card p-5">
-        <div className="card-title">Totale Spedizioni</div>
+        <div className="card-title">Total Shipments</div>
         <div className="card-value">{stats.totale}</div>
       </div>
 
       <div className="card p-5">
-        <div className="card-title">Per Corriere</div>
+        <div className="card-title">By Courier</div>
         <div className="mt-2 space-y-1">
           {Object.entries(stats.perCorriere).map(([corriere, count]) => (
             <div key={corriere} className="flex items-center gap-2">
@@ -55,7 +55,7 @@ export default function StatsCards({ spedizioni }: Props) {
       </div>
 
       <div className="card p-5">
-        <div className="card-title">Per Stato</div>
+        <div className="card-title">By Status</div>
         <div className="mt-2 space-y-1">
           {Object.entries(stats.perStato).map(([stato, count]) => (
             <div key={stato} className="flex items-center gap-2">
@@ -69,7 +69,7 @@ export default function StatsCards({ spedizioni }: Props) {
       </div>
 
       <div className="card p-5">
-        <div className="card-title">Ultima Spedizione</div>
+        <div className="card-title">Latest</div>
         <div className="mt-2 text-xl font-bold text-gray-900">
           {stats.ultimaData
             ? new Date(stats.ultimaData + "T00:00:00").toLocaleDateString(

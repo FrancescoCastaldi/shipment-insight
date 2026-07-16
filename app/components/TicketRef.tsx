@@ -21,7 +21,7 @@ export default function TicketRef() {
           </svg>
         </div>
         <div>
-          <h3 className="font-semibold text-gray-900">Ticket Assistenza GLS</h3>
+          <h3 className="font-semibold text-gray-900">GLS Support Ticket</h3>
           <p className="text-xs text-gray-500">ServiceNow</p>
         </div>
       </div>
@@ -42,7 +42,7 @@ export default function TicketRef() {
             />
           </svg>
           <span className="text-sm font-medium">
-            Ticket aperto il 16/07/2026
+            Opened on 16/07/2026
           </span>
         </div>
       </div>
@@ -66,11 +66,11 @@ export default function TicketRef() {
             d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
           />
         </svg>
-        Apri Ticket GLS
+        Open GLS Ticket
       </a>
 
       <p className="text-xs text-gray-400 mt-3 text-center">
-        Revisione segnalazione GLS - ServiceNow Portal
+        GLS Report Review - ServiceNow Portal
       </p>
     </div>
   );

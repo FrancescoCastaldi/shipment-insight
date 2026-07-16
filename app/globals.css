@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+:root {
+  --color-gls: #8DC63F;
+  --color-gls-dark: #6BA32E;
+  --color-gls-light: #B5E07A;
+}

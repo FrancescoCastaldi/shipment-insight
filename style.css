@@ -141,6 +141,23 @@ img, svg {
   background: #fef2f2;
 }
 
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-small {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+
+/* ===== Header Right ===== */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* ===== Main Layout ===== */
 .main-layout {
   flex: 1;
@@ -527,6 +544,80 @@ img, svg {
   border-top: 1px solid #e5e7eb;
 }
 
+/* ===== Tracking Detail Modal ===== */
+#trackingModalOverlay .modal {
+  max-width: 600px;
+}
+
+.tracking-detail-header {
+  margin-bottom: 16px;
+}
+
+.tracking-detail-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+  word-break: break-all;
+}
+
+.tracking-detail-courier {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.tracking-detail-status {
+  margin-bottom: 20px;
+}
+
+.tracking-detail-history h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #111827;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.history-table thead {
+  background: #f9fafb;
+}
+
+.history-table th {
+  text-align: left;
+  padding: 8px 10px;
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.history-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: top;
+}
+
+.history-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.history-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.no-history {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
 /* ===== Footer ===== */
 .footer {
   background: #111827;
@@ -585,6 +676,7 @@ img, svg {
 
   .header-right {
     width: 100%;
+    flex-direction: column;
   }
 
   .header-right .btn {

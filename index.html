@@ -23,6 +23,8 @@
       </div>
     </div>
     <div class="header-right">
+      <button class="btn btn-secondary" onclick="refreshAll()" title="Reload from storage">Refresh</button>
+      <button class="btn btn-secondary check-all-btn" onclick="checkAll()">Check All</button>
       <button class="btn btn-primary" onclick="openModal()">+ Add Shipment</button>
     </div>
   </div>
@@ -83,6 +85,7 @@
               <th>Description</th>
               <th>Date</th>
               <th>Status</th>
+              <th>Live Status</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -184,6 +187,21 @@
   </div>
 </div>
 
+<!-- Tracking Detail Modal -->
+<div class="modal-overlay" id="trackingModalOverlay" onclick="closeTrackingModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Tracking Detail</h2>
+      <button class="modal-close" onclick="closeTrackingModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="trackingModalContent">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeTrackingModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===== Data =====
 const DEFAULT_SHIPMENTS = [
@@ -266,13 +284,16 @@ function renderTable() {
 
   tbody.innerHTML = shipments.map(s => {
     const statusColor = getStatusColor(s.status);
+    const ls = liveStatuses[s.id];
     return '<tr>' +
       '<td><a href="' + s.link + '" target="_blank" rel="noopener noreferrer" class="tracking-link">' + escHtml(s.tracking) + '</a></td>' +
       '<td><span class="courier-badge">' + escHtml(s.courier) + '</span></td>' +
       '<td>' + escHtml(s.description) + '</td>' +
       '<td>' + escHtml(s.date) + '</td>' +
       '<td><span class="status-badge" style="background:' + statusColor.bg + ';color:' + statusColor.text + '">' + escHtml(s.status) + '</span></td>' +
+      '<td class="live-status-cell" data-id="' + s.id + '">' + renderLiveBadge(ls) + '</td>' +
       '<td class="action-cell">' +
+        '<button class="btn btn-small check-btn" onclick="checkAndShow(\'' + s.id + '\')">Check</button>' +
         '<select class="status-select" data-id="' + s.id + '" onchange="updateStatus(this)">' +
           STATUSES.map(st => '<option value="' + st + '"' + (st === s.status ? ' selected' : '') + '>' + st + '</option>').join('') +
         '</select>' +
@@ -441,9 +462,182 @@ function escHtml(str) {
   return d.innerHTML;
 }
 
+// ===== Live Tracking =====
+let liveStatuses = {};
+
+async function fetchTracking(trackingNumber) {
+  const proxyUrl = 'https://api.allorigins.win/raw?url=';
+  const apiUrl = 'https://gls-group.com/app/service/open/rest/IT/it/rstt030?match=' + encodeURIComponent(trackingNumber) + '&type=NAT&caller=witt002&millis=' + Date.now();
+
+  try {
+    const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
+    if (!response.ok) throw new Error('API error');
+    const data = await response.json();
+    if (data.tuStatus && data.tuStatus.length > 0) {
+      const status = data.tuStatus[0];
+      return {
+        statusText: status.progressBar.statusText || 'Unknown',
+        level: status.progressBar.level || 0,
+        history: status.history || [],
+        city: (status.history && status.history[0] && status.history[0].address && status.history[0].address.city) || '',
+        date: (status.history && status.history[0] && status.history[0].date) || '',
+        raw: data
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('Tracking error:', err);
+    return null;
+  }
+}
+
+function getLiveBadgeColor(statusText) {
+  if (!statusText) return { bg: '#f3f4f6', text: '#374151' };
+  const s = statusText.toLowerCase();
+  if (s.indexOf('delivered') !== -1 || s.indexOf('consegnat') !== -1) return { bg: '#d1fae5', text: '#065f46' };
+  if (s.indexOf('transit') !== -1 || s.indexOf('transito') !== -1) return { bg: '#fef3c7', text: '#92400e' };
+  if (s.indexOf('preadvice') !== -1 || s.indexOf('avviso') !== -1) return { bg: '#dbeafe', text: '#1e40af' };
+  if (s.indexOf('exception') !== -1 || s.indexOf('eccezion') !== -1 || s.indexOf('error') !== -1) return { bg: '#fee2e2', text: '#991b1b' };
+  return { bg: '#f3f4f6', text: '#374151' };
+}
+
+function renderLiveBadge(status) {
+  if (!status || !status.statusText) {
+    return '<span class="status-badge" style="background:#f3f4f6;color:#374151">N/A</span>';
+  }
+  const color = getLiveBadgeColor(status.statusText);
+  return '<span class="status-badge" style="background:' + color.bg + ';color:' + color.text + '">' + escHtml(status.statusText) + '</span>';
+}
+
+async function checkShipment(id) {
+  const s = shipments.find(function(x) { return x.id === id; });
+  if (!s) return;
+
+  const btn = document.querySelector('.check-btn[onclick*="' + id + '"]');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '...';
+  }
+
+  const result = await fetchTracking(s.tracking);
+
+  if (result) {
+    liveStatuses[id] = result;
+  } else {
+    liveStatuses[id] = { statusText: null, level: -1, history: [], city: '', date: '' };
+  }
+
+  // Update the live status cell
+  var cell = document.querySelector('.live-status-cell[data-id="' + id + '"]');
+  if (cell) {
+    cell.innerHTML = renderLiveBadge(liveStatuses[id]);
+  }
+
+  // Update the badge in tracking detail modal if open
+  var modalContent = document.getElementById('trackingModalContent');
+  if (modalContent && modalContent.querySelector('.tracking-detail-header')) {
+    var headerId = modalContent.getAttribute('data-shipment-id');
+    if (headerId === id) {
+      showTrackingDetail(id);
+    }
+  }
+
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = 'Check';
+  }
+}
+
+async function checkAndShow(id) {
+  await checkShipment(id);
+  showTrackingDetail(id);
+}
+
+async function checkAll() {
+  const checkAllBtn = document.querySelector('.check-all-btn');
+  if (checkAllBtn) {
+    checkAllBtn.disabled = true;
+    checkAllBtn.textContent = 'Checking...';
+  }
+
+  for (var i = 0; i < shipments.length; i++) {
+    await checkShipment(shipments[i].id);
+  }
+
+  if (checkAllBtn) {
+    checkAllBtn.disabled = false;
+    checkAllBtn.textContent = 'Check All';
+  }
+}
+
+function refreshAll() {
+  liveStatuses = {};
+  init();
+}
+
+function showTrackingDetail(id) {
+  const s = shipments.find(function(x) { return x.id === id; });
+  if (!s) return;
+
+  const ls = liveStatuses[id];
+  const content = document.getElementById('trackingModalContent');
+  content.setAttribute('data-shipment-id', id);
+
+  var html = '<div class="tracking-detail-header">' +
+    '<h3>' + escHtml(s.tracking) + '</h3>' +
+    '<p class="tracking-detail-courier">' + escHtml(s.courier) + '</p>' +
+  '</div>';
+
+  if (ls && ls.statusText) {
+    const color = getLiveBadgeColor(ls.statusText);
+    html += '<div class="tracking-detail-status">' +
+      '<span class="status-badge" style="background:' + color.bg + ';color:' + color.text + ';font-size:1rem;padding:6px 16px">' + escHtml(ls.statusText) + '</span>' +
+    '</div>';
+  } else {
+    html += '<div class="tracking-detail-status">' +
+      '<span class="status-badge" style="background:#f3f4f6;color:#374151;font-size:1rem;padding:6px 16px">N/A</span>' +
+    '</div>';
+  }
+
+  if (ls && ls.history && ls.history.length > 0) {
+    html += '<div class="tracking-detail-history">' +
+      '<h4>History</h4>' +
+      '<table class="history-table">' +
+        '<thead><tr><th>Date</th><th>Time</th><th>City</th><th>Description</th></tr></thead>' +
+        '<tbody>';
+    for (var j = 0; j < ls.history.length; j++) {
+      var h = ls.history[j];
+      html += '<tr>' +
+        '<td>' + escHtml(h.date || '') + '</td>' +
+        '<td>' + escHtml(h.time || '') + '</td>' +
+        '<td>' + escHtml((h.address && h.address.city) || '') + '</td>' +
+        '<td>' + escHtml(h.evtDscr || '') + '</td>' +
+      '</tr>';
+    }
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="tracking-detail-history">' +
+      '<p class="no-history">No tracking history available.</p>' +
+    '</div>';
+  }
+
+  content.innerHTML = html;
+  document.getElementById('trackingModalOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeTrackingModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('trackingModalOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
 // Keyboard shortcut
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeModal({ target: document.getElementById('modalOverlay'), currentTarget: document.getElementById('modalOverlay') });
+  if (e.key === 'Escape') {
+    closeModal({ target: document.getElementById('modalOverlay'), currentTarget: document.getElementById('modalOverlay') });
+    closeTrackingModal({ target: document.getElementById('trackingModalOverlay'), currentTarget: document.getElementById('trackingModalOverlay') });
+  }
 });
 
 // ===== Boot =====

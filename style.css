@@ -714,3 +714,9 @@ img, svg {
     padding-right: 16px;
   }
 }
+
+/* ===== Iframe Tracking ===== */
+.iframe-container { padding: 0; }
+.iframe-container iframe { width: 100%; height: 500px; border: 1px solid #e5e7eb; border-radius: 8px; }
+.btn-track { background: #dbeafe; color: #1e40af; padding: 4px 10px; font-size: 0.75rem; }
+.btn-track:hover { background: #bfdbfe; }
